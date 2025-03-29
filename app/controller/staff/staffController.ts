@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+
 import {
   fireDB,
   doc,
@@ -9,10 +10,15 @@ import {
   where,
   getDocs,
   updateDoc,
+  addDoc,
 } from "../../config/database";
 import { config } from "dotenv";
 import bcrypt from "bcrypt";
 
+import axios from 'axios';
+import { user } from "../../utils/types";
+interface CustomRequest extends Request {
+  user: user}
 export const addStaff = async (req: Request, res: Response): Promise<void> => {
     try {
 
@@ -61,9 +67,8 @@ export const addStaff = async (req: Request, res: Response): Promise<void> => {
     }
   };
 
-  import axios from 'axios';
 
-export const generatePaymentLink = async (req: Request, res: Response): Promise<void> => {
+export const generatePaymentLink = async (req: CustomRequest, res: Response): Promise<void> => {
   if (req.body.paymentMethod !== 'PayEx') {
     res.status(400).json({ message: 'Invalid payment type.' });
     return;
@@ -73,14 +78,14 @@ export const generatePaymentLink = async (req: Request, res: Response): Promise<
 
 
   const payload = [
+    
     {
       amount: req.body.amount,
       currency: req.body.currency || 'MYR',
       customer_name: req.body.fullName,
       email: req.body.email,
       payment_type: req.body.paymentType || 'card',
-      reference_number: `REF-${Date.now()}`,
-      description: 'Payment via PayEx',
+      contact_number: req.body.contactNumber
     },
   ];
 
@@ -98,7 +103,26 @@ export const generatePaymentLink = async (req: Request, res: Response): Promise<
     );
 
     console.log('PayEx response:', response.data);
-
+if(response.data?.message !== 'Success') {
+      res.status(400).json({
+        message: 'Error from PayEx: ' + response.data?.message,
+        data: response.data,
+      });
+      return;
+    }
+    const paymentRef = collection(fireDB, "paymentLinks")
+    await addDoc(paymentRef, {
+      paymentLink: response.data?.result[0]?.url,
+      amount: req.body.amount,
+      currency: req.body.currency || 'MYR',
+      fullName: req.body.fullName,
+      email: req.body.email,
+      paymentType: req.body.paymentType || 'card',
+      contactNumber: req.body.contactNumber,
+      profileId:req.user.profileId,
+      createdAt: new Date().toISOString(),
+    });
+ 
     res.status(200).json({
       message: 'Payment link generated successfully.',
       data: response.data,
