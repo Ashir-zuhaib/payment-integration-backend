@@ -6,6 +6,6 @@ const staffRoute = Router();
 
 staffRoute.post("/add", addStaff);
 staffRoute.post("/generateLink", generatePaymentLink);
-staffRoute.post("/getPaymentTypes", getPaymentTypes);
+staffRoute.get("/getPaymentTypes", getPaymentTypes);
 // staffRoute.post("/login", loginFunction);
 export default staffRoute;
