@@ -29,7 +29,7 @@ export const addStaff = async (req: Request, res: Response): Promise<void> => {
         res.status(400).json({ message: "Email, password and role are required." });
         return;
       }
-   if (role !=="IaDdaRr5FMKAMFxHW55l") {
+   if (role !=="staff") {
         res.status(400).json({ message: "Only Staff Can add" });
         return;
       }
