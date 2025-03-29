@@ -60,3 +60,83 @@ export const addStaff = async (req: Request, res: Response): Promise<void> => {
       res.status(500).json({ message: "Server error", success: false });
     }
   };
+
+  import axios from 'axios';
+
+export const generatePaymentLink = async (req: Request, res: Response): Promise<void> => {
+  if (req.body.paymentMethod !== 'PayEx') {
+    res.status(400).json({ message: 'Invalid payment type.' });
+    return;
+  }
+
+  console.log('Incoming Request:', req.body);
+
+
+  const payload = [
+    {
+      amount: req.body.amount,
+      currency: req.body.currency || 'MYR',
+      customer_name: req.body.fullName,
+      email: req.body.email,
+      payment_type: req.body.paymentType || 'card',
+      reference_number: `REF-${Date.now()}`,
+      description: 'Payment via PayEx',
+    },
+  ];
+
+  try {
+    const response = await axios.post(
+      `${process.env.PAYEX_BASEURL}/api/v1/PaymentIntents`,
+      payload,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${process.env.PAYEX_API_KEY}`,
+        },
+      }
+    );
+
+    console.log('PayEx response:', response.data);
+
+    res.status(200).json({
+      message: 'Payment link generated successfully.',
+      data: response.data,
+    });
+  } catch (error: any) {
+    console.error('PayEx error:', error?.response?.data || error.message);
+    res.status(error?.response?.status || 500).json({
+      message: 'Failed to generate payment link.',
+      error: error?.response?.data || error.message,
+    });
+  }
+};
+
+export const getPaymentTypes = (req:Request , res: Response) => {
+  if(!req.query.paymentMethod) {
+    res.status(400).json({ message: 'Payment method is required.' });
+    return;
+  }  
+    const paymentMethod = req.query.paymentMethod
+    if(paymentMethod == 'payex'){
+       axios.get(`${process.env.PAYEX_BASEURL}/api/v1/Merchants/TransactionTypes`, {
+        headers: {
+          'Content-Type': 'application/json', 
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${process.env.PAYEX_API_KEY}`,
+        },  
+      })
+      .then(response => {
+        res.status(200).json({
+          message: 'Payment types fetched successfully.',
+          data: response.data,
+        });
+      })
+      .catch(error => { 
+        console.error('Error fetching payment types:', error);
+        res.status(500).json({
+          message: 'Failed to fetch payment types.',
+          error: error.message,
+        });
+      })
+    }}

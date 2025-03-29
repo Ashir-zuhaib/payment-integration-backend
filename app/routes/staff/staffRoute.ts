@@ -1,9 +1,11 @@
 
 import { Router } from "express";
-import { addStaff } from "../../controller/staff/staffController";
+import { addStaff, generatePaymentLink, getPaymentTypes } from "../../controller/staff/staffController";
 
 const staffRoute = Router();
 
 staffRoute.post("/add", addStaff);
+staffRoute.post("/generateLink", generatePaymentLink);
+staffRoute.post("/getPaymentTypes", getPaymentTypes);
 // staffRoute.post("/login", loginFunction);
 export default staffRoute;
