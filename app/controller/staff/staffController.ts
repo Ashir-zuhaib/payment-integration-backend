@@ -125,7 +125,7 @@ if(response.data?.message !== 'Success') {
  
     res.status(200).json({
       message: 'Payment link generated successfully.',
-      data: response.data,
+      data:  response.data?.result[0]?.url,
     });
   } catch (error: any) {
     console.error('PayEx error:', error?.response?.data || error.message);
