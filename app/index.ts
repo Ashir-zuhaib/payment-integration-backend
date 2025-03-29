@@ -8,9 +8,6 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:3000",
-  "https://turbo-dashboard-peach.vercel.app",
-  "https://dashboard.turbodonate.com",
-  "https://dev-dashboard.turbodonate.com",
 ];
 app.use(
   cors({
@@ -32,7 +29,7 @@ app.use(bodyParser.urlencoded({ limit: "5mb", extended: true }));
 
 app.use(router);
 app.get("/", async (req, res) => {
-  res.json({ message: "Turbo Donate Backend" });
+  res.json({ message: "Payment Integration Backend" });
 });
 
 app.listen({ port: 4000 }, () =>
