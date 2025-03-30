@@ -43,3 +43,24 @@ export const getStaff = async (
     });
   }
 };
+
+export const getAllPaymentLink = async (req: CustomRequest, res: Response): Promise<void> => {
+  try {
+    const paymentLinkRef = 
+      collection(fireDB, "paymentLinks")
+    
+    const paymentLinkSnapshot = await getDocs(paymentLinkRef);
+    const paymentLinks = paymentLinkSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    
+    res.status(200).json({
+      message: 'Payment links fetched successfully.',
+      data: paymentLinks,
+    });
+  } catch (error) {
+    console.error('Error fetching payment links:', error);
+    res.status(500).json({
+      message: 'Failed to fetch payment links.',
+      error: error.message,
+    });
+  }
+}

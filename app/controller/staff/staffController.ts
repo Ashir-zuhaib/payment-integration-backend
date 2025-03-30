@@ -165,6 +165,7 @@ export const getPaymentTypes = (req:Request , res: Response) => {
       })
     }}
 
+
 export const getPaymentLink = async (req: CustomRequest, res: Response): Promise<void> => {
   try {
     const paymentLinkRef = query(
