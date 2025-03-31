@@ -8,6 +8,8 @@ const app = express();
 
 const allowedOrigins = [
   "http://localhost:3000",
+  "http://localhost:3001",
+  "https://payment-integration-rust.vercel.app"
 ];
 app.use(
   cors({
