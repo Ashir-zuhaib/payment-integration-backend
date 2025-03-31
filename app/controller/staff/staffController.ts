@@ -78,14 +78,15 @@ export const generatePaymentLink = async (req: CustomRequest, res: Response): Pr
 
 
   const payload = [
-    
     {
-      amount: req.body.amount,
+      amount: Math.round(parseFloat(req.body.amount) * 100), // Convert to cents
       currency: req.body.currency || 'MYR',
       customer_name: req.body.fullName,
       email: req.body.email,
       payment_type: req.body.paymentType || 'card',
-      contact_number: req.body.contactNumber
+      contact_number: req.body.contactNumber,
+      description: req.body.description,
+      refrenceNo: req.body.refrenceNo,
     },
   ];
 
@@ -113,9 +114,12 @@ if(response.data?.message !== 'Success') {
     const paymentRef = collection(fireDB, "paymentLinks")
     await addDoc(paymentRef, {
       paymentLink: response.data?.result[0]?.url,
+      paymentIntent: response.data?.result[0]?.key,
       amount: req.body.amount,
       currency: req.body.currency || 'MYR',
       fullName: req.body.fullName,
+      description: req.body.description,
+      refrenceNo: req.body.refrenceNo,
       email: req.body.email,
       paymentType: req.body.paymentType || 'card',
       contactNumber: req.body.contactNumber,
@@ -166,24 +170,61 @@ export const getPaymentTypes = (req:Request , res: Response) => {
     }}
 
 
-export const getPaymentLink = async (req: CustomRequest, res: Response): Promise<void> => {
-  try {
-    const paymentLinkRef = query(
-      collection(fireDB, "paymentLinks"),
-      where("profileId", "==", req.user.profileId)
-    );
-    const paymentLinkSnapshot = await getDocs(paymentLinkRef);
-    const paymentLinks = paymentLinkSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    export const getPaymentLink = async (req: CustomRequest, res: Response): Promise<void> => {
+      try {
+        const paymentLinkRef = query(
+          collection(fireDB, "paymentLinks"),
+          where("profileId", "==", req.user.profileId)
+        );
+        const paymentLinkSnapshot = await getDocs(paymentLinkRef);
     
-    res.status(200).json({
-      message: 'Payment links fetched successfully.',
-      data: paymentLinks,
-    });
-  } catch (error) {
-    console.error('Error fetching payment links:', error);
-    res.status(500).json({
-      message: 'Failed to fetch payment links.',
-      error: error.message,
-    });
-  }
-}
+        const paymentLinks: any[] = paymentLinkSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+    
+        const linksWithTransactions = await Promise.all(
+          paymentLinks.map(async (link) => {
+            if (link?.paymentIntent) {
+              try {
+                const response = await axios.get(
+                  `${process.env.PAYEX_BASEURL}/api/v1/Transactions?payment_intent=${link.paymentIntent}`,
+                  {
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Accept': 'application/json',
+                      'Authorization': `Bearer ${process.env.PAYEX_API_KEY}`,
+                    },
+                  }
+                );
+    
+                return {
+                  ...link,
+                  transactionDetails: response?.data?.result[0] || null,
+                };
+              } catch (error) {
+                console.error(`Error fetching transaction for intent ${link.paymentIntent}:`, error);
+                return {
+                  ...link,
+                  transactionDetails: null,
+                };
+              }
+            }
+    
+            return link;
+          })
+        );
+    
+        res.status(200).json({
+          message: 'Payment links fetched successfully.',
+          data: linksWithTransactions,
+        });
+      } catch (error) {
+        console.error('Error fetching payment links:', error);
+        res.status(500).json({
+          message: 'Failed to fetch payment links.',
+          error: error.message,
+        });
+      }
+    };
+    

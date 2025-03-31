@@ -15,6 +15,7 @@ import {
 } from "../../config/database";
 import { user } from "../../utils/types";
 import { JwtPayload } from "jsonwebtoken";
+import axios from "axios";
 
 export const getStaff = async (
   req: CustomRequest,
@@ -50,11 +51,41 @@ export const getAllPaymentLink = async (req: CustomRequest, res: Response): Prom
       collection(fireDB, "paymentLinks")
     
     const paymentLinkSnapshot = await getDocs(paymentLinkRef);
-    const paymentLinks = paymentLinkSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    
+    const paymentLinks:any = paymentLinkSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const linksWithTransactions = await Promise.all(
+      paymentLinks.map(async (link) => {
+        if (link?.paymentIntent) {
+          try {
+            const response = await axios.get(
+              `${process.env.PAYEX_BASEURL}/api/v1/Transactions?payment_intent=${link.paymentIntent}`,
+              {
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                  'Authorization': `Bearer ${process.env.PAYEX_API_KEY}`,
+                },
+              }
+            );
+
+            return {
+              ...link,
+              transactionDetails: response?.data?.result[0] || null,
+            };
+          } catch (error) {
+            console.error(`Error fetching transaction for intent ${link.paymentIntent}:`, error);
+            return {
+              ...link,
+              transactionDetails: null,
+            };
+          }
+        }
+
+        return link;
+      })
+    );
     res.status(200).json({
       message: 'Payment links fetched successfully.',
-      data: paymentLinks,
+      data: linksWithTransactions,
     });
   } catch (error) {
     console.error('Error fetching payment links:', error);
