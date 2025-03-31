@@ -62,9 +62,9 @@ console.log(req.body);
 
 export const loginFunction = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { email, password, role } = req.body;
+    const { email, password } = req.body;
 
-    if (!email || !password || !role) {
+    if (!email || !password ) {
       res.status(400).json({ message: "All fields are required", success: false });
       return;
     }
@@ -87,10 +87,7 @@ export const loginFunction = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    if (userData.role !== role) {
-      res.status(403).json({ message: "Incorrect role", success: false });
-      return;
-    }
+   
 
     const data = await generateUserData(userData as user);
 

@@ -86,7 +86,9 @@ export const generatePaymentLink = async (req: CustomRequest, res: Response): Pr
       payment_type: req.body.paymentType || 'card',
       contact_number: req.body.contactNumber,
       description: req.body.description,
-      refrenceNo: req.body.refrenceNo,
+      reference_number: req.body.refrenceNo,
+      return_url: `${process.env.APP_URL}/dashboard/generate`,
+      reject_url: `${process.env.APP_URL}/payment/failed`,
     },
   ];
 
