@@ -47,15 +47,22 @@ export const getStaff = async (
 };
 
 export const getAllPaymentLink = async (req: CustomRequest, res: Response): Promise<void> => {
-  try {
-    const paymentLinkRef = req.user.role === "admin"?
-      collection(fireDB, "paymentLinks"):
-      query(collection(fireDB, "paymentLinks"), where("profileId", "==", req.user.profileId));
-    
-    const paymentLinkSnapshot = await getDocs(paymentLinkRef);
-    const paymentLinks:any = paymentLinkSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  try {    
+    // 1. Fetch all links based on role
+    const baseQuery =
+      req.user.role === 'admin'
+        ? collection(fireDB, 'paymentLinks')
+        : query(collection(fireDB, 'paymentLinks'), where('profileId', '==', req.user.profileId));
+
+    const paymentLinkSnapshot = await getDocs(baseQuery);
+    const paymentLinks = paymentLinkSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+    // 2. For each payment link, enrich with transaction + profile (optional)
     const linksWithTransactions = await Promise.all(
-      paymentLinks.map(async (link) => {
+      paymentLinks.map(async (link:any) => {
+        let transactionDetails = null;
+        let generatedProfileData = null;
+
         if (link?.paymentIntent) {
           try {
             const response = await axios.get(
@@ -68,34 +75,43 @@ export const getAllPaymentLink = async (req: CustomRequest, res: Response): Prom
                 },
               }
             );
-           const docData = await getDoc(doc(fireDB, "paymentLinks", link?.profileId))
-            return {
-              ...link,
-              transactionDetails: response?.data?.result[0] || null,
-              generatedProfileData: docData?.data() || null,
-            };
-          } catch (error) {
-            console.error(`Error fetching transaction for intent ${link.paymentIntent}:`, error);
-            return {
-              ...link,
-              transactionDetails: null,
-              generatedData:null
-            };
+            transactionDetails = response?.data?.result?.[0] || null;
+          } catch (err) {
+            console.error(`Failed to fetch transaction for intent ${link.paymentIntent}`, err);
           }
         }
 
-        return link;
+        // 3. Optional: Fetch profile data
+        if (link?.profileId) {
+          try {
+            const docRef = doc(fireDB, 'users', link.profileId);
+            const profileSnapshot = await getDoc(docRef);
+            const profileDoc = profileSnapshot.exists()?profileSnapshot.data():null;
+            console.log("Profile Document:", profileDoc);
+            
+            generatedProfileData = profileDoc
+          } catch (err) {
+            console.error(`Failed to fetch profile for ${link.profileId}`, err);
+          }
+        }
+
+        return {
+          ...link,
+          transactionDetails,
+          generatedProfileData,
+        };
       })
     );
+
     res.status(200).json({
       message: 'Payment links fetched successfully.',
       data: linksWithTransactions,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching payment links:', error);
     res.status(500).json({
       message: 'Failed to fetch payment links.',
       error: error.message,
     });
   }
-}
+};

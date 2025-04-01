@@ -8,7 +8,7 @@ const adminRoute = Router();
 // adminRoute.post("/admin/register-center", verifyJWT, isAdmin, addNewCenter);
 // adminRoute.post("/admin/register-center", verifyJWT, isAdmin, addNewCenter);
 adminRoute.get("/admin/getStaff", verifyJWT, isAdmin, getStaff);
-adminRoute.get("/admin/getAllPaymentLink", verifyJWT, isAdmin, getAllPaymentLink);
+adminRoute.get("/admin/getAllPaymentLink", verifyJWT, getAllPaymentLink);
 adminRoute.post("/login");
 adminRoute.get("/profile");
 
