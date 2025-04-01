@@ -75,7 +75,7 @@ export const generatePaymentLink = async (req: CustomRequest, res: Response): Pr
   }
 
   console.log('Incoming Request:', req.body);
-
+const return_Page = req.user.role =="admin"?`dashboard/admin/`:`dashboard/`
 
   const payload = [
     {
@@ -87,7 +87,7 @@ export const generatePaymentLink = async (req: CustomRequest, res: Response): Pr
       contact_number: req.body.contactNumber,
       description: req.body.description,
       reference_number: req.body.refrenceNo,
-      return_url: `${process.env.APP_URL}/dashboard/generate`,
+      return_url: `${process.env.APP_URL}/${return_Page}`,
       reject_url: `${process.env.APP_URL}/payment/failed`,
     },
   ];
