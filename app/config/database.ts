@@ -19,6 +19,7 @@ import {
   setDoc,
   updateDoc,
   where,
+  deleteDoc,
 } from "firebase/firestore/lite";
 import {
   FirebaseStorage,
@@ -70,4 +71,5 @@ export {
   updateDoc,
   uploadBytes,
   where,
+  deleteDoc
 };
