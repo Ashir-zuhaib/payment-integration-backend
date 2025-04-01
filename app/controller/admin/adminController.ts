@@ -12,6 +12,7 @@ import {
   where,
   getDocs,
   setDoc,
+  getDoc,
 } from "../../config/database";
 import { user } from "../../utils/types";
 import { JwtPayload } from "jsonwebtoken";
@@ -47,8 +48,9 @@ export const getStaff = async (
 
 export const getAllPaymentLink = async (req: CustomRequest, res: Response): Promise<void> => {
   try {
-    const paymentLinkRef = 
-      collection(fireDB, "paymentLinks")
+    const paymentLinkRef = req.user.role === "admin"?
+      collection(fireDB, "paymentLinks"):
+      query(collection(fireDB, "paymentLinks"), where("profileId", "==", req.user.profileId));
     
     const paymentLinkSnapshot = await getDocs(paymentLinkRef);
     const paymentLinks:any = paymentLinkSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -66,16 +68,18 @@ export const getAllPaymentLink = async (req: CustomRequest, res: Response): Prom
                 },
               }
             );
-
+           const docData = await getDoc(doc(fireDB, "paymentLinks", link?.profileId))
             return {
               ...link,
               transactionDetails: response?.data?.result[0] || null,
+              generatedProfileData: docData?.data() || null,
             };
           } catch (error) {
             console.error(`Error fetching transaction for intent ${link.paymentIntent}:`, error);
             return {
               ...link,
               transactionDetails: null,
+              generatedData:null
             };
           }
         }

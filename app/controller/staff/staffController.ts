@@ -123,6 +123,7 @@ if(response.data?.message !== 'Success') {
       description: req.body.description,
       refrenceNo: req.body.refrenceNo,
       email: req.body.email,
+      paymentMethod:req.body.paymentMethod,
       paymentType: req.body.paymentType || 'card',
       contactNumber: req.body.contactNumber,
       profileId:req.user.profileId,
